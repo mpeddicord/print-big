@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Print Big</title>
+<meta name="description" content="Print a poster on a normal printer: cut a picture into Letter or A4 pages, print at 100%, overlap and tape. Runs entirely in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='4' fill='%232f6fde'/%3E%3Cpath d='M11 2v28M21 2v28M2 11h28M2 21h28' stroke='%23fff' stroke-width='2' stroke-dasharray='3 2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Print Big</h1>
+  <p>Turn any picture into a big poster on a normal printer. Pick the finished size, download the PDF, print every page at 100%, then cut, overlap and tape.</p>
+</header>
+
+<main>
+  <section class="card drop" id="drop">
+    <input type="file" id="file" accept="image/*">
+    <label for="file"><strong id="dropTitle">Drop a picture here, or tap to choose one</strong></label>
+    <span class="muted">JPEG, PNG, WebP, or a photo straight from your phone. It never leaves your device.
+      <button type="button" class="link" id="sample">Try the sample picture</button></span>
+  </section>
+
+  <form class="card settings" id="settings" onsubmit="return false">
+    <label class="field"><span>Paper</span>
+      <select id="paper">
+        <option value="letter" selected>US Letter</option>
+        <option value="a4">A4</option>
+        <option value="legal">Legal</option>
+        <option value="tabloid">Tabloid</option>
+      </select>
+    </label>
+    <label class="field"><span>Orientation</span>
+      <select id="orient">
+        <option value="auto" selected>Auto</option>
+        <option value="portrait">Portrait</option>
+        <option value="landscape">Landscape</option>
+      </select>
+    </label>
+    <fieldset class="field seg">
+      <legend>Units</legend>
+      <div>
+        <label><input type="radio" name="unit" id="unitIn" value="in" checked><span>inches</span></label>
+        <label><input type="radio" name="unit" id="unitCm" value="cm"><span>cm</span></label>
+      </div>
+    </fieldset>
+    <label class="field"><span>Finished width <span class="unit"></span></span>
+      <input type="number" id="width" min="1" step="0.5" inputmode="decimal">
+    </label>
+    <label class="field"><span>Finished height <span class="unit"></span></span>
+      <input type="number" id="height" min="1" step="0.5" inputmode="decimal">
+    </label>
+    <label class="field"><span>Overlap <span class="unit"></span></span>
+      <input type="number" id="overlap" min="0" step="0.05" inputmode="decimal">
+    </label>
+    <label class="field"><span>Printer margin <span class="unit"></span></span>
+      <input type="number" id="margin" min="0" step="0.05" inputmode="decimal">
+    </label>
+    <div class="checks">
+      <label><input type="checkbox" id="cutMarks" checked> Cut marks</label>
+      <label><input type="checkbox" id="labels" checked> Page labels (row 2, col 3)</label>
+      <label><input type="checkbox" id="cover" checked> Assembly sheet with 1-inch check square</label>
+    </div>
+  </form>
+
+  <section class="card previewCard">
+    <div class="previewWrap" id="previewWrap"><canvas id="preview" width="800" height="533"></canvas></div>
+    <p id="summary" aria-live="polite">Choose a picture to see the page grid.</p>
+    <div class="actions">
+      <button type="button" id="download" disabled>Download PDF</button>
+      <button type="button" id="print" class="secondary" disabled>Print</button>
+    </div>
+    <p id="progress" class="muted" aria-live="polite"></p>
+  </section>
+
+  <section class="card how">
+    <h2>Putting it together</h2>
+    <ol>
+      <li>Print all pages at <strong>100% / Actual size</strong>, never "Fit to page" or "Shrink to fit".</li>
+      <li>On the assembly sheet, measure the square: it must be exactly 1 inch (2.54 cm). If not, fix the print scale before cutting anything.</li>
+      <li>Lay the pages out by row and column, following the map on the assembly sheet.</li>
+      <li>Page 1 stays whole. Every other page: cut along its dashed edge(s), lay it over the neighbouring page so the picture lines up, and tape it. Small ticks in the margins show where the next page's edge should land.</li>
+    </ol>
+  </section>
+</main>
+
+<footer>
+  Everything runs in your browser; nothing is uploaded.
+  <a href="https://github.com/mpeddicord/print-big">Source on GitHub</a>
+</footer>
+
+<div id="printPages"></div>
+<style id="printStyle"></style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js" integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3" crossorigin="anonymous" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>
