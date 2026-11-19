@@ -325,11 +325,42 @@ async function printPages() {
 }
 
 // ---------- image loading ----------
+// SVG is vector: rasterize once, at ~300 dpi for the poster size as it stands, inside the decode cap.
+// shortcut: not re-rasterized when the poster is enlarged afterwards, so dpi then drops like a photo's; re-pick the file to get it back.
+async function svgBitmap(file) {
+  const svg = new DOMParser().parseFromString(await file.text(), 'image/svg+xml').documentElement;
+  if (svg.tagName.toLowerCase() !== 'svg') throw new Error('that file is not valid SVG');
+  const attr = a => { const v = svg.getAttribute(a); return v && !v.includes('%') ? parseFloat(v) : NaN; };
+  const vb = (svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  let w = attr('width'), h = attr('height');
+  if (!(w > 0 && h > 0)) { w = vb[2]; h = vb[3]; }
+  if (!(w > 0 && h > 0)) throw new Error('that SVG has no width, height or viewBox');
+  const aspect = w / h;
+  const outW = Math.max(1, Math.round(Math.min(state.widthIn * 300, Math.sqrt(MAX_SRC_PIXELS * aspect))));
+  const outH = Math.max(1, Math.round(outW / aspect));
+  if (!svg.hasAttribute('viewBox')) svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('width', outW); svg.setAttribute('height', outH);
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' }));
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = outW; c.height = outH;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, outW, outH); // SVGs are usually transparent; a poster prints on white
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, outW, outH);
+    return createImageBitmap(c);
+  } finally { URL.revokeObjectURL(url); }
+}
+
 async function loadFile(file) {
   if (!file) return;
   let bmp;
-  try { bmp = await createImageBitmap(file); }
-  catch { el.summary.textContent = `Could not read "${file.name}" as an image.`; el.summary.classList.add('warn'); return; }
+  const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
+  try { bmp = isSvg ? await svgBitmap(file) : await createImageBitmap(file); }
+  catch (e) { el.summary.textContent = `Could not read "${file.name}" as an image.${e?.message ? ` ${e.message}.` : ''}`; el.summary.classList.add('warn'); return; }
   const n = bmp.width * bmp.height;
   if (n > MAX_SRC_PIXELS) {
     const k = Math.sqrt(MAX_SRC_PIXELS / n);

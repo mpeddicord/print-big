@@ -7,8 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'test', 'out');
-fs.rmSync(outDir, { recursive: true, force: true });
-fs.mkdirSync(outDir, { recursive: true });
+fs.mkdirSync(outDir, { recursive: true }); // each run overwrites the files it checks; older ones just stay
 const shot = path.resolve(process.argv[2] || path.join(outDir, 'app.png'));
 const edge = process.env.EDGE || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 
@@ -109,6 +108,20 @@ if (s2.paper !== 'A4' || s2.orient !== 'portrait') problems.push(`second run gav
 dl = nextDownload();
 await page.click('#download');
 checkPdf(await dl, 'a4-portrait-60cm.pdf', s2.pages, [8.27, 11.69]);
+
+// SVG: vector source, viewBox only (no width/height), aspect 2
+await input.uploadFile(path.join(root, 'test', 'fixture.svg'));
+await page.waitForFunction(() => /fixture\.svg/.test(document.getElementById('dropTitle').textContent));
+await new Promise(r => setTimeout(r, 300));
+const s3 = parseSummary(await summary());
+console.log('svg:', await summary());
+const svgHeightCm = await page.$eval('#height', e => +e.value);
+if (Math.abs(svgHeightCm - 30) > 0.05) problems.push(`svg height should follow its viewBox aspect: got ${svgHeightCm} cm, want 30`);
+const svgDpi = +/about (\d+) dpi/.exec(await summary())?.[1];
+if (!(svgDpi >= 290)) problems.push(`svg should rasterize near 300 dpi, got ${svgDpi}`);
+dl = nextDownload();
+await page.click('#download');
+checkPdf(await dl, 'svg-a4-portrait.pdf', s3.pages, [8.27, 11.69]);
 
 await page.click('#sample');
 await page.waitForFunction(() => /sample\.jpg/.test(document.getElementById('dropTitle').textContent));
